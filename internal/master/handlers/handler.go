@@ -309,6 +309,12 @@ func (h *MasterHandler) handleAdminCommand(message *tgbotapi.Message, command, a
 		h.handleAdminPaymentStatus(message)
 	case "admin_ai_config":
 		h.handleAdminAIConfig(message)
+	case "admin_ai_test":
+		h.handleAdminAITest(message)
+	case "admin_users":
+		h.handleAdminUsers(message)
+	case "admin_backup":
+		h.handleAdminBackup(message)
 	default:
 		h.sendMessage(message.Chat.ID, "未知管理员命令，使用 /admin_help 查看可用命令")
 	}

@@ -188,3 +188,36 @@ func (r *UserRepository) Count() (int, error) {
 	}
 	return count, nil
 }
+
+// GetAll 获取所有用户（分页）
+func (r *UserRepository) GetAll(limit, offset int) ([]*models.User, error) {
+	query := `
+		SELECT id, telegram_id, username, first_name, last_name, is_admin, created_at
+		FROM users
+		ORDER BY created_at DESC
+		LIMIT ? OFFSET ?
+	`
+	rows, err := r.db.Query(query, limit, offset)
+	if err != nil {
+		return nil, fmt.Errorf("查询用户列表失败: %w", err)
+	}
+	defer rows.Close()
+
+	var users []*models.User
+	for rows.Next() {
+		user := &models.User{}
+		if err := rows.Scan(
+			&user.ID,
+			&user.TelegramID,
+			&user.Username,
+			&user.FirstName,
+			&user.LastName,
+			&user.IsAdmin,
+			&user.CreatedAt,
+		); err != nil {
+			return nil, fmt.Errorf("扫描用户数据失败: %w", err)
+		}
+		users = append(users, user)
+	}
+	return users, nil
+}

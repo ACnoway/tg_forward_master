@@ -4,6 +4,10 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
+	"io"
+	"os"
+	"path/filepath"
+	"sort"
 	"strconv"
 	"time"
 
@@ -344,4 +348,112 @@ func FormatPrice(price float64) string {
 // FormatTime 格式化时间
 func FormatTime(t time.Time) string {
 	return t.Format("2006-01-02 15:04:05")
+}
+
+// TestAIConnection 测试AI连接
+func (s *AdminService) TestAIConnection() (string, error) {
+	// 获取AI配置
+	endpoint, apiKey, model, err := s.GetAIConfig()
+	if err != nil {
+		return "", err
+	}
+
+	if endpoint == "" || apiKey == "" || model == "" {
+		return "", fmt.Errorf("AI配置不完整，请先使用 /admin_ai_config 配置")
+	}
+
+	// 创建AI服务并测试
+	aiService := NewAIService(endpoint, apiKey, model)
+	response, err := aiService.TestConnection()
+	if err != nil {
+		return "", err
+	}
+
+	return response, nil
+}
+
+// GetUserList 获取用户列表（分页）
+func (s *AdminService) GetUserList(limit, offset int) ([]*models.User, int, error) {
+	// 获取总数
+	total, err := s.userRepo.Count()
+	if err != nil {
+		return nil, 0, err
+	}
+
+	// 获取用户列表
+	users, err := s.userRepo.GetAll(limit, offset)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	return users, total, nil
+}
+
+// BackupDatabase 备份数据库
+func (s *AdminService) BackupDatabase(dbPath string) (string, error) {
+	// 生成备份文件名
+	timestamp := time.Now().Format("20060102_150405")
+	backupPath := fmt.Sprintf("%s.backup_%s", dbPath, timestamp)
+
+	// 读取源数据库文件
+	source, err := os.Open(dbPath)
+	if err != nil {
+		return "", fmt.Errorf("打开数据库文件失败: %w", err)
+	}
+	defer source.Close()
+
+	// 创建备份文件
+	destination, err := os.Create(backupPath)
+	if err != nil {
+		return "", fmt.Errorf("创建备份文件失败: %w", err)
+	}
+	defer destination.Close()
+
+	// 复制文件
+	_, err = io.Copy(destination, source)
+	if err != nil {
+		return "", fmt.Errorf("复制文件失败: %w", err)
+	}
+
+	return backupPath, nil
+}
+
+// GetBackupList 获取备份列表
+func (s *AdminService) GetBackupList(dbPath string) ([]BackupInfo, error) {
+	dir := filepath.Dir(dbPath)
+	base := filepath.Base(dbPath)
+	pattern := base + ".backup_*"
+
+	matches, err := filepath.Glob(filepath.Join(dir, pattern))
+	if err != nil {
+		return nil, fmt.Errorf("查找备份文件失败: %w", err)
+	}
+
+	var backups []BackupInfo
+	for _, match := range matches {
+		info, err := os.Stat(match)
+		if err != nil {
+			continue
+		}
+
+		backups = append(backups, BackupInfo{
+			Path:    match,
+			Size:    info.Size(),
+			ModTime: info.ModTime(),
+		})
+	}
+
+	// 按时间倒序排序
+	sort.Slice(backups, func(i, j int) bool {
+		return backups[i].ModTime.After(backups[j].ModTime)
+	})
+
+	return backups, nil
+}
+
+// BackupInfo 备份信息
+type BackupInfo struct {
+	Path    string
+	Size    int64
+	ModTime time.Time
 }

@@ -2,6 +2,8 @@ package handlers
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -182,6 +184,152 @@ func getConfigDisplay(value string) string {
 		return "未设置"
 	}
 	return value
+}
+
+// handleAdminAITest 处理 /admin_ai_test 命令
+func (h *MasterHandler) handleAdminAITest(message *tgbotapi.Message) {
+	h.sendMessage(message.Chat.ID, "🤖 正在测试AI连接...\n\n请稍候...")
+
+	// 测试AI连接
+	response, err := h.adminService.TestAIConnection()
+	if err != nil {
+		text := fmt.Sprintf("❌ AI连接测试失败\n\n错误信息：\n%s\n\n请检查：\n1. API地址是否正确\n2. API密钥是否有效\n3. 模型名称是否正确\n4. 网络连接是否正常", err.Error())
+		h.sendMessage(message.Chat.ID, text)
+		return
+	}
+
+	text := fmt.Sprintf("✅ AI连接测试成功！\n\nAI响应：\n%s\n\n连接正常，可以使用AI功能", response)
+	h.sendMessage(message.Chat.ID, text)
+}
+
+// handleAdminUsers 处理 /admin_users 命令
+func (h *MasterHandler) handleAdminUsers(message *tgbotapi.Message) {
+	// 获取用户列表（显示前20个）
+	users, total, err := h.adminService.GetUserList(20, 0)
+	if err != nil {
+		h.sendMessage(message.Chat.ID, "❌ 获取用户列表失败："+err.Error())
+		return
+	}
+
+	if total == 0 {
+		h.sendMessage(message.Chat.ID, "👥 当前没有用户")
+		return
+	}
+
+	var text strings.Builder
+	text.WriteString(fmt.Sprintf("👥 用户列表（共 %d 人，显示前20个）\n\n", total))
+
+	for i, user := range users {
+		roleIcon := "👤"
+		if user.IsAdmin {
+			roleIcon = "👑"
+		}
+
+		name := user.FirstName
+		if user.LastName != "" {
+			name += " " + user.LastName
+		}
+		if name == "" {
+			name = "未知"
+		}
+
+		username := ""
+		if user.Username != "" {
+			username = "@" + user.Username
+		}
+
+		text.WriteString(fmt.Sprintf("%s %d. %s\n", roleIcon, i+1, name))
+		if username != "" {
+			text.WriteString(fmt.Sprintf("   用户名: %s\n", username))
+		}
+		text.WriteString(fmt.Sprintf("   ID: %d\n", user.TelegramID))
+		text.WriteString(fmt.Sprintf("   注册时间: %s\n\n", service.FormatTime(user.CreatedAt)))
+	}
+
+	if total > 20 {
+		text.WriteString(fmt.Sprintf("\n💡 还有 %d 个用户未显示", total-20))
+	}
+
+	h.sendMessage(message.Chat.ID, text.String())
+}
+
+// handleAdminBackup 处理 /admin_backup 命令
+func (h *MasterHandler) handleAdminBackup(message *tgbotapi.Message) {
+	h.sendMessage(message.Chat.ID, "💾 正在备份数据库...\n\n请稍候...")
+
+	// 执行备份
+	backupPath, err := h.adminService.BackupDatabase(h.config.DatabasePath)
+	if err != nil {
+		h.sendMessage(message.Chat.ID, "❌ 备份失败："+err.Error())
+		return
+	}
+
+	// 获取文件信息
+	info, err := os.Stat(backupPath)
+	if err != nil {
+		h.sendMessage(message.Chat.ID, "❌ 获取备份文件信息失败："+err.Error())
+		return
+	}
+
+	// 格式化文件大小
+	size := float64(info.Size())
+	unit := "B"
+	if size > 1024 {
+		size = size / 1024
+		unit = "KB"
+	}
+	if size > 1024 {
+		size = size / 1024
+		unit = "MB"
+	}
+
+	text := fmt.Sprintf(`✅ 数据库备份成功！
+
+📦 备份信息：
+文件名: %s
+大小: %.2f %s
+时间: %s
+
+💡 备份文件保存在与数据库相同的目录下`,
+		filepath.Base(backupPath),
+		size,
+		unit,
+		service.FormatTime(info.ModTime()),
+	)
+
+	h.sendMessage(message.Chat.ID, text)
+
+	// 显示最近的备份列表
+	backups, err := h.adminService.GetBackupList(h.config.DatabasePath)
+	if err == nil && len(backups) > 0 {
+		var listText strings.Builder
+		listText.WriteString("\n\n📋 最近的备份（最多5个）：\n\n")
+
+		count := len(backups)
+		if count > 5 {
+			count = 5
+		}
+
+		for i := 0; i < count; i++ {
+			backup := backups[i]
+			bSize := float64(backup.Size)
+			bUnit := "B"
+			if bSize > 1024 {
+				bSize = bSize / 1024
+				bUnit = "KB"
+			}
+			if bSize > 1024 {
+				bSize = bSize / 1024
+				bUnit = "MB"
+			}
+
+			listText.WriteString(fmt.Sprintf("%d. %s\n", i+1, filepath.Base(backup.Path)))
+			listText.WriteString(fmt.Sprintf("   大小: %.2f %s\n", bSize, bUnit))
+			listText.WriteString(fmt.Sprintf("   时间: %s\n\n", service.FormatTime(backup.ModTime)))
+		}
+
+		h.sendMessage(message.Chat.ID, listText.String())
+	}
 }
 
 // handleSessionMessage 处理会话中的消息

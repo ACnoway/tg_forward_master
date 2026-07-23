@@ -1,5 +1,5 @@
 # 编译产物
-master
+/master
 master.exe
 *.exe
 *.out
