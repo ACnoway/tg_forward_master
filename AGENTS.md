@@ -443,9 +443,16 @@ go build -o master cmd/master/main.go
 
 ## 开发路线图
 
-### Phase 1: 核心功能 ✅
+### Phase 1: 核心功能 🚧
 - [x] 项目架构设计
-- [ ] 数据库设计与迁移
+- [x] 数据库设计与迁移
+- [x] 数据访问层（Repository）实现
+  - [x] UserRepository
+  - [x] SubscriptionRepository
+  - [x] PlanRepository
+  - [x] WorkerBotRepository
+  - [x] RedeemCodeRepository
+  - [x] CustomerRepository
 - [ ] 主控Bot基础框架
 - [ ] 子Bot消息转发
 
