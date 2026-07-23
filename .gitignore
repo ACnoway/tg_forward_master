@@ -1,32 +1,20 @@
-# Binaries
-bin/
+# 编译产物
+master
+master.exe
 *.exe
-*.exe~
-*.dll
-*.so
-*.dylib
-
-# Test binary
-*.test
-
-# Output of the go coverage tool
 *.out
 
-# Dependency directories
-vendor/
-
-# Go workspace file
-go.work
-
-# Environment variables
-config.env
-.env
-
-# Database
+# 数据文件
 data/
 *.db
 *.db-shm
 *.db-wal
+
+# 配置文件
+config.env
+
+# 日志文件
+*.log
 
 # IDE
 .vscode/
@@ -35,18 +23,15 @@ data/
 *.swo
 *~
 
-# OS
+# 操作系统
 .DS_Store
 Thumbs.db
 
-# Logs
-*.log
-logs/
+# Go
+*.test
+*.prof
+vendor/
 
-# Backup files
-*.bak
-*.backup
-
-# Agents
-.claude/
-.continue/
+# 临时文件
+tmp/
+temp/

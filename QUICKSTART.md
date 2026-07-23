@@ -52,18 +52,36 @@
 ## 三、启动
 
 ### 方式1：使用启动脚本（推荐）
+
+**Linux/Mac:**
 ```bash
 chmod +x start.sh
 ./start.sh
 ```
 
+**Windows:**
+```cmd
+start.bat
+```
+
 ### 方式2：手动启动
+
+**Linux/Mac:**
 ```bash
+# 编译
+go build -o master cmd/master/main.go
+
+# 运行
+./master
+```
+
+**Windows:**
+```cmd
 # 编译
 go build -o master.exe cmd/master/main.go
 
 # 运行
-./master.exe
+master.exe
 ```
 
 ## 四、首次使用
