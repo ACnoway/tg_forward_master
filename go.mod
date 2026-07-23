@@ -1,4 +1,4 @@
-module github.com/yourusername/tg_forward_master
+module github.com/acnoway/tg_forward_master
 
 go 1.21
 
