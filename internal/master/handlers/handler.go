@@ -7,6 +7,7 @@ import (
 
 	"github.com/acnoway/tg_forward_master/internal/config"
 	"github.com/acnoway/tg_forward_master/internal/database"
+	"github.com/acnoway/tg_forward_master/internal/master/service"
 	"github.com/acnoway/tg_forward_master/internal/models"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
@@ -17,16 +18,49 @@ type MasterHandler struct {
 	db     *database.DB
 	config *config.Config
 
-	userRepo *database.UserRepository
+	userRepo         *database.UserRepository
+	planRepo         *database.PlanRepository
+	subscriptionRepo *database.SubscriptionRepository
+	redeemCodeRepo   *database.RedeemCodeRepository
+	workerBotRepo    *database.WorkerBotRepository
+	configRepo       *database.SystemConfigRepository
+
+	adminService   *service.AdminService
+	sessionManager *SessionManager
 }
 
 // NewMasterHandler 创建主控Bot处理器
 func NewMasterHandler(bot *tgbotapi.BotAPI, db *database.DB, cfg *config.Config) *MasterHandler {
+	// 初始化仓库
+	userRepo := database.NewUserRepository(db)
+	planRepo := database.NewPlanRepository(db)
+	subscriptionRepo := database.NewSubscriptionRepository(db)
+	redeemCodeRepo := database.NewRedeemCodeRepository(db)
+	workerBotRepo := database.NewWorkerBotRepository(db)
+	configRepo := database.NewSystemConfigRepository(db)
+
+	// 初始化服务
+	adminService := service.NewAdminService(
+		userRepo,
+		planRepo,
+		redeemCodeRepo,
+		subscriptionRepo,
+		workerBotRepo,
+		configRepo,
+	)
+
 	return &MasterHandler{
-		bot:      bot,
-		db:       db,
-		config:   cfg,
-		userRepo: database.NewUserRepository(db),
+		bot:              bot,
+		db:               db,
+		config:           cfg,
+		userRepo:         userRepo,
+		planRepo:         planRepo,
+		subscriptionRepo: subscriptionRepo,
+		redeemCodeRepo:   redeemCodeRepo,
+		workerBotRepo:    workerBotRepo,
+		configRepo:       configRepo,
+		adminService:     adminService,
+		sessionManager:   NewSessionManager(),
 	}
 }
 
@@ -41,6 +75,12 @@ func (h *MasterHandler) HandleMessage(message *tgbotapi.Message) {
 	)
 	if err != nil {
 		log.Printf("获取用户失败: %v", err)
+		return
+	}
+
+	// 检查是否有进行中的会话
+	if session, exists := h.sessionManager.GetSession(message.From.ID); exists {
+		h.handleSessionMessage(message, user, session)
 		return
 	}
 
@@ -179,6 +219,20 @@ func (h *MasterHandler) handleAdminCommand(message *tgbotapi.Message, command, a
 		h.handleAdminHelp(message)
 	case "admin_stats":
 		h.handleAdminStats(message)
+	case "admin_add_plan":
+		h.handleAdminAddPlan(message)
+	case "admin_list_plans":
+		h.handleAdminListPlans(message)
+	case "admin_generate_code":
+		h.handleAdminGenerateCode(message)
+	case "admin_code_list":
+		h.handleAdminCodeList(message)
+	case "admin_payment_config":
+		h.handleAdminPaymentConfig(message)
+	case "admin_payment_status":
+		h.handleAdminPaymentStatus(message)
+	case "admin_ai_config":
+		h.handleAdminAIConfig(message)
 	default:
 		h.sendMessage(message.Chat.ID, "未知管理员命令，使用 /admin_help 查看可用命令")
 	}
@@ -216,16 +270,42 @@ func (h *MasterHandler) handleAdminHelp(message *tgbotapi.Message) {
 
 // handleAdminStats 处理 /admin_stats 命令
 func (h *MasterHandler) handleAdminStats(message *tgbotapi.Message) {
-	userCount, _ := h.userRepo.Count()
+	stats, err := h.adminService.GetSystemStats()
+	if err != nil {
+		h.sendMessage(message.Chat.ID, "❌ 获取统计信息失败："+err.Error())
+		return
+	}
 
 	text := fmt.Sprintf(`📊 系统统计
 
-👥 用户数：%d
-🤖 运行中的子Bot：开发中
-📨 今日消息转发：开发中
-🛡️ 今日AI拦截：开发中
+👥 用户统计：
+总用户数：%d
+管理员数：%d
 
-更多详细统计功能开发中...`, userCount)
+📦 订阅统计：
+总订阅数：%d
+有效订阅：%d
+
+🤖 Bot统计：
+总Bot数：%d
+运行中：%d
+
+💰 套餐统计：
+有效套餐：%d
+
+🎫 兑换码统计：
+总兑换码：%d
+未使用：%d`,
+		stats["user_count"],
+		stats["admin_count"],
+		stats["subscription_count"],
+		stats["active_subscription_count"],
+		stats["bot_count"],
+		stats["running_bot_count"],
+		stats["plan_count"],
+		stats["redeem_code_count"],
+		stats["unused_code_count"],
+	)
 
 	h.sendMessage(message.Chat.ID, text)
 }

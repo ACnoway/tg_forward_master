@@ -453,7 +453,14 @@ go build -o master cmd/master/main.go
   - [x] WorkerBotRepository
   - [x] RedeemCodeRepository
   - [x] CustomerRepository
-- [ ] 主控Bot基础框架
+  - [x] SystemConfigRepository
+- [x] 管理员功能实现
+  - [x] 套餐管理 (/admin_add_plan, /admin_list_plans)
+  - [x] 兑换码管理 (/admin_generate_code, /admin_code_list)
+  - [x] 易支付配置 (/admin_payment_config, /admin_payment_status)
+  - [x] AI配置 (/admin_ai_config)
+  - [x] 系统统计 (/admin_stats)
+- [ ] 主控Bot用户功能
 - [ ] 子Bot消息转发
 
 ### Phase 2: 商业化
