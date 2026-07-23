@@ -15,23 +15,17 @@ type MessageForwarder struct {
 	db           *database.DB
 	botID        int64
 	ownerID      int64
-	customerRepo *CustomerRepository
-}
-
-// CustomerRepository 客户数据仓库接口
-type CustomerRepository interface {
-	GetOrCreate(botID, telegramID int64, username, firstName, lastName string) (*models.Customer, error)
-	Update(customer *models.Customer) error
-	IncrementMessageCount(botID, telegramID int64) error
+	customerRepo *database.CustomerRepository
 }
 
 // NewMessageForwarder 创建消息转发器
 func NewMessageForwarder(bot *tgbotapi.BotAPI, db *database.DB, botID, ownerID int64) *MessageForwarder {
 	return &MessageForwarder{
-		bot:     bot,
-		db:      db,
-		botID:   botID,
-		ownerID: ownerID,
+		bot:          bot,
+		db:           db,
+		botID:        botID,
+		ownerID:      ownerID,
+		customerRepo: database.NewCustomerRepository(db),
 	}
 }
 
