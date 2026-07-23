@@ -1,14 +1,13 @@
 #!/bin/bash
 
-# Telegram Bot Master 启动脚本
+# Telegram Bot 主控启动脚本
 
-echo "🚀 启动 Telegram Bot Master..."
+echo "🚀 启动 Telegram Bot 主控系统..."
 
 # 检查配置文件
 if [ ! -f "config.env" ]; then
-    echo "❌ 配置文件不存在，正在创建..."
-    cp config.example.env config.env
-    echo "✅ 已创建 config.env，请编辑后重新运行"
+    echo "❌ 错误: config.env 文件不存在"
+    echo "请复制 config.example.env 为 config.env 并填写配置"
     exit 1
 fi
 
@@ -18,9 +17,9 @@ if [ ! -d "data" ]; then
     mkdir -p data
 fi
 
-# 编译并运行
-echo "📦 编译中..."
-go build -o bin/master cmd/master/main.go
+# 编译程序
+echo "🔨 编译程序..."
+go build -o master.exe cmd/master/main.go
 
 if [ $? -ne 0 ]; then
     echo "❌ 编译失败"
@@ -28,5 +27,20 @@ if [ $? -ne 0 ]; then
 fi
 
 echo "✅ 编译完成"
-echo "🎯 启动主控Bot..."
-./bin/master
+echo "🚀 启动主控Bot..."
+echo ""
+echo "================================================"
+echo "  Telegram Bot 主控系统"
+echo "================================================"
+echo ""
+echo "首次使用步骤："
+echo "1. 向Bot发送 /start"
+echo "2. 使用 /setadmin 设置管理员"
+echo "3. 使用 /admin_help 查看管理员命令"
+echo ""
+echo "按 Ctrl+C 停止运行"
+echo "================================================"
+echo ""
+
+# 启动程序
+./master.exe

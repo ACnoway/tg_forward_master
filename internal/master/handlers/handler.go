@@ -99,9 +99,15 @@ func (h *MasterHandler) handleCommand(message *tgbotapi.Message, user *models.Us
 	command := message.Command()
 	args := message.CommandArguments()
 
-	// 管理员命令
-	if strings.HasPrefix(command, "admin") && user.IsAdmin {
+	// 管理员命令（命令以 admin_ 开头）
+	if strings.HasPrefix(command, "admin_") && user.IsAdmin {
 		h.handleAdminCommand(message, command, args)
+		return
+	}
+
+	// 特殊命令：设置管理员（仅在没有管理员时可用）
+	if command == "setadmin" {
+		h.handleSetAdmin(message, user)
 		return
 	}
 
@@ -130,6 +136,32 @@ func (h *MasterHandler) handleCommand(message *tgbotapi.Message, user *models.Us
 
 // handleStart 处理 /start 命令
 func (h *MasterHandler) handleStart(message *tgbotapi.Message, user *models.User) {
+	// 检查是否有管理员
+	admins, _ := h.userRepo.GetAllAdmins()
+	if len(admins) == 0 {
+		// 没有管理员，提示设置
+		text := fmt.Sprintf(`👋 欢迎使用Telegram消息转发Bot系统！
+
+🆔 您的信息：
+用户名：@%s
+姓名：%s %s
+Telegram ID：%d
+
+⚠️ 系统提示：
+当前系统还没有管理员，请使用以下命令设置您为管理员：
+
+/setadmin
+
+设置完成后，使用 /help 查看可用命令`,
+			user.Username,
+			user.FirstName,
+			user.LastName,
+			user.TelegramID,
+		)
+		h.sendMessage(message.Chat.ID, text)
+		return
+	}
+
 	text := fmt.Sprintf(`👋 欢迎使用Telegram消息转发Bot系统！
 
 🆔 您的信息：
@@ -143,6 +175,50 @@ Telegram ID：%d
 3. /help - 查看完整帮助
 
 💡 提示：首次使用请先购买订阅套餐`,
+		user.Username,
+		user.FirstName,
+		user.LastName,
+		user.TelegramID,
+	)
+
+	h.sendMessage(message.Chat.ID, text)
+}
+
+// handleSetAdmin 处理 /setadmin 命令
+func (h *MasterHandler) handleSetAdmin(message *tgbotapi.Message, user *models.User) {
+	// 检查是否已有管理员
+	admins, err := h.userRepo.GetAllAdmins()
+	if err != nil {
+		h.sendMessage(message.Chat.ID, "❌ 查询管理员失败："+err.Error())
+		return
+	}
+
+	if len(admins) > 0 {
+		h.sendMessage(message.Chat.ID, "❌ 系统已有管理员，无法设置\n\n如需更改管理员，请联系现有管理员使用管理功能")
+		return
+	}
+
+	// 设置为管理员
+	if err := h.userRepo.SetAdmin(user.TelegramID, true); err != nil {
+		h.sendMessage(message.Chat.ID, "❌ 设置管理员失败："+err.Error())
+		return
+	}
+
+	text := fmt.Sprintf(`✅ 管理员设置成功！
+
+👤 管理员信息：
+用户名：@%s
+姓名：%s %s
+Telegram ID：%d
+
+🔧 管理员专用命令：
+使用 /admin_help 查看所有管理员命令
+
+📋 快速开始：
+1. /admin_add_plan - 创建订阅套餐
+2. /admin_payment_config - 配置支付接口
+3. /admin_ai_config - 配置AI反垃圾
+4. /admin_stats - 查看系统统计`,
 		user.Username,
 		user.FirstName,
 		user.LastName,
