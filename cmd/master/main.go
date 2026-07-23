@@ -6,10 +6,10 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/acnoway/tg_forward_master/internal/config"
+	"github.com/acnoway/tg_forward_master/internal/database"
+	"github.com/acnoway/tg_forward_master/internal/master/handlers"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
-	"github.com/yourusername/tg_forward_master/internal/config"
-	"github.com/yourusername/tg_forward_master/internal/database"
-	"github.com/yourusername/tg_forward_master/internal/master/handlers"
 )
 
 func main() {

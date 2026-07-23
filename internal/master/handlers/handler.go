@@ -5,10 +5,10 @@ import (
 	"log"
 	"strings"
 
+	"github.com/acnoway/tg_forward_master/internal/config"
+	"github.com/acnoway/tg_forward_master/internal/database"
+	"github.com/acnoway/tg_forward_master/internal/models"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
-	"github.com/yourusername/tg_forward_master/internal/config"
-	"github.com/yourusername/tg_forward_master/internal/database"
-	"github.com/yourusername/tg_forward_master/internal/models"
 )
 
 // MasterHandler 主控Bot处理器

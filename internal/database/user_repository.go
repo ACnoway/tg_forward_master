@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/yourusername/tg_forward_master/internal/models"
+	"github.com/acnoway/tg_forward_master/internal/models"
 )
 
 // UserRepository 用户数据访问层

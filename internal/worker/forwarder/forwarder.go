@@ -4,19 +4,18 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/acnoway/tg_forward_master/internal/database"
+	"github.com/acnoway/tg_forward_master/internal/models"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
-	"github.com/yourusername/tg_forward_master/internal/database"
-	"github.com/yourusername/tg_forward_master/internal/models"
-	"github.com/yourusername/tg_forward_master/internal/utils"
 )
 
 // MessageForwarder 消息转发器
 type MessageForwarder struct {
-	bot           *tgbotapi.BotAPI
-	db            *database.DB
-	botID         int64
-	ownerID       int64
-	customerRepo  *CustomerRepository
+	bot          *tgbotapi.BotAPI
+	db           *database.DB
+	botID        int64
+	ownerID      int64
+	customerRepo *CustomerRepository
 }
 
 // CustomerRepository 客户数据仓库接口
